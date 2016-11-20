@@ -1,0 +1,19 @@
+{
+  "name": "vera-labs",
+  "version": "1.0.1",
+  "description": "A library for securing files with Vera",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "MrStark",
+  "contributors": "Jochen Bedersdorfer <beders@yahoo.com>",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "request": "^2.78.0"
+  },
+  "devDependencies": {
+    "mocha": "^3.1.2"
+  }
+}
