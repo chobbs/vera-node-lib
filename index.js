@@ -19,9 +19,9 @@ Vera.prototype.policy = function (options) {
         request.get({
                 url: self.endpoint + '/ext/policy',
                 auth: {
-                    'user': self.appID,
-                    'pass': self.appSecret,
-                    'sendImmediately': true
+                    user: self.appID,
+                    pass: self.appSecret,
+                    sendImmediately: true
                 }
             },
             function (error, response, body) {
@@ -39,21 +39,20 @@ Vera.prototype.policy = function (options) {
 };
 
 Vera.prototype.meta = function (options) {
-
     var self = this;
     var docData = fs.createReadStream(options.file);
 
     var formData = {
-        'docData': docData
+        docData: docData
     };
 
     return new Promise(function (resolve, reject) {
         request.post({
                 url: self.endpoint + '/ext/doc/meta',
                 auth: {
-                    'user': self.appID,
-                    'pass': self.appSecret,
-                    'sendImmediately': true
+                    user: self.appID,
+                    pass: self.appSecret,
+                    sendImmediately: true
                 },
                 formData: formData
             }
@@ -66,9 +65,7 @@ Vera.prototype.meta = function (options) {
                     reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
                 } else {
                     resolve(body);
-
                 }
-
             });
     });
 };
@@ -80,12 +77,11 @@ Vera.prototype.protect = function (options) {
     var path = options.path || options.file;
     var destination = options.destination; // CH: file destination
 
-    // CH: really need toadd logic to  check these values at some point.
+    // CH: really need to add logic to  check these values at some point.
 
     var formData = {
-        'docName': docName,
-        // CH: pass data via streams vs destination
-        'docData': docData,
+        docName: docName,
+        docData: docData,
         path: path
     };
 
@@ -95,12 +91,12 @@ Vera.prototype.protect = function (options) {
         var stream = request.post({
             url: self.endpoint + '/ext/doc/protect',
             auth: {
-                'user': self.appID,
-                'pass': self.appSecret,
-                'sendImmediately': true
+                user: self.appID,
+                pass: self.appSecret,
+                sendImmediately: true
             },
             headers: {
-                'Accept': 'application/octet-stream; version=1;'
+                Accept: 'application/octet-stream; version=1;'
             },
             formData: formData
         }).on('response', function (response) {
@@ -145,19 +141,19 @@ Vera.prototype.unprotect = function (options) {
 
 
     var formData = {
-        'docData': docData
+        docData: docData
     };
 
     return new Promise(function (resolve, reject) {
         var stream = request.post({
             url: self.endpoint + '/ext/doc/unprotect',
             auth: {
-                'user': self.appID,
-                'pass': self.appSecret,
-                'sendImmediately': true
+                user: self.appID,
+                pass: self.appSecret,
+                sendImmediately: true
             },
             headers: {
-                'Accept': 'application/octet-stream; version=1;'
+                Accept: 'application/octet-stream; version=1;'
             },
             formData: formData
         }).on('response', function (response) {
