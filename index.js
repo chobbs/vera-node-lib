@@ -12,12 +12,10 @@ function Vera(appID, appSecret, endpoint) {
     this.endpoint = endpoint;
 }
 
-Vera.prototype.policy = function(options) {
+Vera.prototype.policy = function (options) {
     var self = this;
 
     return new Promise(function (resolve, reject) {
-
-
         request.get({
                 url: self.endpoint + '/ext/policy',
                 auth: {
@@ -25,6 +23,39 @@ Vera.prototype.policy = function(options) {
                     'pass': self.appSecret,
                     'sendImmediately': true
                 }
+            },
+            function (error, response, body) {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                if (response.statusCode != 200) {
+                    reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
+                } else {
+                    resolve(body);
+                }
+            });
+    });
+};
+
+Vera.prototype.meta = function (options) {
+
+    var self = this;
+    var docData = fs.createReadStream(options.file);
+
+    var formData = {
+        'docData': docData
+    };
+
+    return new Promise(function (resolve, reject) {
+        request.post({
+                url: self.endpoint + '/ext/doc/meta',
+                auth: {
+                    'user': self.appID,
+                    'pass': self.appSecret,
+                    'sendImmediately': true
+                },
+                formData: formData
             }
             , function (error, response, body) {
                 if (error) {
@@ -42,160 +73,121 @@ Vera.prototype.policy = function(options) {
     });
 };
 
-        Vera.prototype.meta = function (options) {
+Vera.prototype.protect = function (options) {
+    var self = this;
+    var docData = options.fileStream || fs.createReadStream(options.file);
+    var docName = options.docName;
+    var path = options.path || options.file;
+    var destination = options.destination; // CH: file destination
 
-            var self = this;
-            var docData = fs.createReadStream(options.file);
+    // CH: really need toadd logic to  check these values at some point.
 
-            var formData = {
-                'docData': docData
-            };
+    var formData = {
+        'docName': docName,
+        // CH: pass data via streams vs destination
+        'docData': docData,
+        path: path
+    };
 
-            return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
+        var veraDocId;
 
-
-                request.post({
-                    url: self.endpoint + '/ext/doc/meta',
-                    auth: {
-                        'user': self.appID,
-                        'pass': self.appSecret,
-                        'sendImmediately': true
-                    },
-                    formData: formData
+        var stream = request.post({
+            url: self.endpoint + '/ext/doc/protect',
+            auth: {
+                'user': self.appID,
+                'pass': self.appSecret,
+                'sendImmediately': true
+            },
+            headers: {
+                'Accept': 'application/octet-stream; version=1;'
+            },
+            formData: formData
+        }).on('response', function (response) {
+            if (response.statusCode !== 200) {
+                reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
+            }
+        }).on('response', function (response) {
+            if (response && response.headers && response.headers['x-vds-doc-id']) {
+                veraDocId = response.headers['x-vds-doc-id'];
+                if (!destination) {
+                    resolve({stream: stream, docId: veraDocId});
                 }
-                    , function (error, response, body) {
-                        if (error) {
-                            reject(error);
-                            return;
-                        }
-                        if (response.statusCode != 200) {
-                            reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
-                        } else {
-                            resolve(body);
+            } else {
+                reject("No Vera header found");
+            }
+        }).on('error', function (err) {
+            reject(err);
+        });
 
-                        }
+        if (destination) {
+            var securedFile = fs.createWriteStream(destination);
 
-                    });
-            });
-        };
-
-        Vera.prototype.protect = function (options) {
-            var self = this;
-            var docData = options.fileStream || fs.createReadStream(options.file);
-            var docName = options.docName;
-            var path = options.path || options.file;
-
-            var destination = options.destination; // CH: file destination
-
-            // CH: really need toadd logic to  check these values at some point.
-
-            var formData = {
-                'docName': docName,
-                // CH: pass data via streams vs destination
-                'docData': docData,
-                path: path
-            };
-
-            return new Promise(function (resolve, reject) {
-                var veraDocId;
-
-                var stream = request.post({
-                    url: self.endpoint + '/ext/doc/protect',
-                    auth: {
-                        'user': self.appID,
-                        'pass': self.appSecret,
-                        'sendImmediately': true
-                    },
-                    headers: {
-                        'Accept': 'application/octet-stream; version=1;'
-                    },
-                    formData: formData
-                }).on('response', function (response) {
-                    if (response.statusCode !== 200) {
-                        reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
-                    }
-                }).on('response', function (response) {
-                    if (response && response.headers && response.headers['x-vds-doc-id']) {
-                        veraDocId = response.headers['x-vds-doc-id'];
-                        if (!destination) {
-                            resolve({stream: stream, docId: veraDocId});
-                        }
-                    } else {
-                        reject("No Vera header found");
-                    }
-                }).on('error', function (err) {
-                    reject(err);
+            securedFile.on('finish', function () {
+                securedFile.close(function () {
+                    resolve({docId: veraDocId, destination: destination});
                 });
-
-                if (destination) {
-                    var securedFile = fs.createWriteStream(destination);
-
-                    securedFile.on('finish', function () {
-                        securedFile.close(function () {
-                            resolve({docId: veraDocId, destination: destination});
-                        });
-                    });
-
-                    securedFile.on('error', function (err) { // CH: dude , you really need to handle errors
-                        fs.unlink(securedFile);
-                        reject(err);
-                    });
-                    stream.pipe(securedFile);
-                }
             });
-        };
 
-        Vera.prototype.unprotect = function (options) {
-            var self = this;
-            var docData = fs.createReadStream(options.file);
-            var destination = options.destination; // CH: file destination
+            securedFile.on('error', function (err) { // CH: dude , you really need to handle errors
+                fs.unlink(securedFile);
+                reject(err);
+            });
+            stream.pipe(securedFile);
+        }
+    });
+};
+
+Vera.prototype.unprotect = function (options) {
+    var self = this;
+    var docData = fs.createReadStream(options.file);
+    var destination = options.destination; // CH: file destination
 
 
-            var formData = {
-                'docData': docData
-            };
+    var formData = {
+        'docData': docData
+    };
 
-            return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
+        var stream = request.post({
+            url: self.endpoint + '/ext/doc/unprotect',
+            auth: {
+                'user': self.appID,
+                'pass': self.appSecret,
+                'sendImmediately': true
+            },
+            headers: {
+                'Accept': 'application/octet-stream; version=1;'
+            },
+            formData: formData
+        }).on('response', function (response) {
+            if (response.statusCode !== 200) {
+                reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
+            }
+        }).on('response', function (response) {
+            if (!destination) {
+                resolve({stream: stream});
+            }
+        }).on('error', function (err) {
+            reject(err);
+        });
 
-                var stream = request.post({
-                    url: self.endpoint + '/ext/doc/unprotect',
-                    auth: {
-                        'user': self.appID,
-                        'pass': self.appSecret,
-                        'sendImmediately': true
-                    },
-                    headers: {
-                        'Accept': 'application/octet-stream; version=1;'
-                    },
-                    formData: formData
-                }).on('response', function (response) {
-                    if (response.statusCode !== 200) {
-                        reject('Response status was ' + response.statusCode + ':' + response.statusMessage);
-                    }
-                }).on('response', function (response) {
-                    if (!destination) {
-                        resolve({stream: stream});
-                    }
-                }).on('error', function (err) {
-                    reject(err);
+        if (destination) {
+            var unsecuredFile = fs.createWriteStream(destination);
+
+            unsecuredFile.on('finish', function () {
+                unsecuredFile.close(function () {
+                    resolve({destination: destination});
                 });
-
-                if (destination) {
-                    var unsecuredFile = fs.createWriteStream(destination);
-
-                    unsecuredFile.on('finish', function () {
-                        unsecuredFile.close(function () {
-                            resolve({destination: destination});
-                        });
-                    });
-
-                    unsecuredFile.on('error', function (err) { // CH: dude , you really need to handle errors
-                        fs.unlink(unsecuredFile);
-                        reject(err);
-                    });
-                    stream.pipe(unsecuredFile);
-                }
             });
-        };
 
-        module.exports = Vera;
+            unsecuredFile.on('error', function (err) { // CH: dude , you really need to handle errors
+                fs.unlink(unsecuredFile);
+                reject(err);
+            });
+            stream.pipe(unsecuredFile);
+        }
+    });
+};
+
+module.exports = Vera;
