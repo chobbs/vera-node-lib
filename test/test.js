@@ -1,9 +1,12 @@
 var fs = require('fs');
 var assert = require('assert');
-var veraAppID = '8d8cfa3a-a72b-33e9-b55a-9870fb68101e';
-var veraAppSecret = 'QXZMQVVoZElpSm1uZ0FpZXhCelVIM0pmaklRPXw4ZDhjZmEzYS1hNzJiLTMzZTktYjU1YS05ODcwZmI2ODEwMWV8OWFmMjMyMmYtOGIxYS0zOTMyLWI2ZTUtZGZiZjllM2IxYTU2fDE0NjMzNTcwMjIyNTR8REVWSUNFfFJPTEVfREVWSUNFfDB8MTQ2MjQ5MzAyMjI1NHxmYWxzZQ;';
 
-var veraEndpoint ='https://veramktg.vera.com/api';
+//CH: Need to add the appliaction details for your tenant to use this test framework, requires MONCHA 
+//CH: https://mochajs.org/
+
+var veraAppID = 'ADD-APP-ID';
+var veraAppSecret = 'ADD-APP-SECRET;';
+var veraEndpoint ='ADD-VERA-ENDPOINT';
 
 var Vera = require('../index.js');
 
