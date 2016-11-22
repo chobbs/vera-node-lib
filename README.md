@@ -13,15 +13,15 @@ var vera = new Vera(veraAppID, veraAppSecret, veraEndpoint);
 
 ```js
 
-vera.protect({file:'myfile.pdf', docName: 'myfile.pdf', destination: './tmp/myfile-secured.html'}).then(function(result){
+vera.protect({file:'myfile.pdf', docName: 'myfile.pdf', destination: 'file-secured.html'}).then(function(result){
 	console.log(JSON.stringify(result)); // Show the stream returm results from Vera. 
 	done();
-}).catch(function (err) {
-	done(err)
+    }).catch(function (err) {
+    done(err)
 })
 
 ```
-NOTE: If  "destination" value is not provided to the protect function, the return result will be encoded to a stream.
+NOTE: If value of "destination" is not provided, the return result will be encoded to a stream.
 
 
 ```js
@@ -29,8 +29,19 @@ NOTE: If  "destination" value is not provided to the protect function, the retur
 vera.policy().then(function(result){
 	console.log(JSON.stringify(result)); // Show the stream returm results from Vera. 
 	done();
-}).catch(function (err) {
+     }).catch(function (err) {
 	done(err)
 })
 
+```
+
+```js
+
+vera.meta({file:'file-secured.html'}).then(function(result){
+	console.log(JSON.stringify(result)); // Show the stream returm results from Vera. 
+	done();
+     }).catch(function (err) {
+	done(err)
+})
+   
 ```
